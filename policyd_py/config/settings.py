@@ -42,6 +42,20 @@ class KeyDBConfig(BaseModel):
     connect_timeout: int = 5
     read_timeout: int = 3
     write_timeout: int = 3
+    max_connections: int = 50
+    socket_keepalive: bool = True
+    retry_on_timeout: bool = True
+    circuit_breaker_enable: bool = True
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_recovery_timeout: int = 30
+    circuit_breaker_success_threshold: int = 2
+    max_connections: int = 50
+    socket_keepalive: bool = True
+    retry_on_timeout: bool = True
+    circuit_breaker_enable: bool = True
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_recovery_timeout: int = 30
+    circuit_breaker_success_threshold: int = 2
 
 
 class LocksConfig(BaseModel):
@@ -297,6 +311,13 @@ class AppConfig(BaseModel):
             cfg.keydb.connect_timeout = k.getint("connect_timeout", cfg.keydb.connect_timeout)
             cfg.keydb.read_timeout = k.getint("read_timeout", cfg.keydb.read_timeout)
             cfg.keydb.write_timeout = k.getint("write_timeout", cfg.keydb.write_timeout)
+            cfg.keydb.max_connections = k.getint("max_connections", cfg.keydb.max_connections)
+            cfg.keydb.socket_keepalive = k.getboolean("socket_keepalive", cfg.keydb.socket_keepalive)
+            cfg.keydb.retry_on_timeout = k.getboolean("retry_on_timeout", cfg.keydb.retry_on_timeout)
+            cfg.keydb.circuit_breaker_enable = k.getboolean("circuit_breaker_enable", cfg.keydb.circuit_breaker_enable)
+            cfg.keydb.circuit_breaker_failure_threshold = k.getint("circuit_breaker_failure_threshold", cfg.keydb.circuit_breaker_failure_threshold)
+            cfg.keydb.circuit_breaker_recovery_timeout = k.getint("circuit_breaker_recovery_timeout", cfg.keydb.circuit_breaker_recovery_timeout)
+            cfg.keydb.circuit_breaker_success_threshold = k.getint("circuit_breaker_success_threshold", cfg.keydb.circuit_breaker_success_threshold)
 
         if "Locks" in parser:
             lk = parser["Locks"]

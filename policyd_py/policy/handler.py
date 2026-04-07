@@ -143,8 +143,12 @@ class PolicyHandler:
 
     def get_stats_snapshot(self):
         """Return a snapshot of runtime statistics counters."""
-        """Return a snapshot of runtime statistics counters."""
-        return self.stats.snapshot().to_dict()
+        payload = self.stats.snapshot().to_dict()
+        payload["redis_pool"] = self.redis.get_connection_pool_info()
+        cb_state = self.redis.get_circuit_breaker_state()
+        if cb_state is not None:
+            payload["circuit_breaker"] = cb_state
+        return payload
 
     async def get_runtime_state(self, email: str) -> dict:
         lock_key = f"lock:{email}"

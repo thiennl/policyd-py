@@ -19,6 +19,20 @@ cluster_mode = false
 connect_timeout = 5
 read_timeout = 3
 write_timeout = 3
+max_connections = 50
+socket_keepalive = true
+retry_on_timeout = true
+circuit_breaker_enable = true
+circuit_breaker_failure_threshold = 5
+circuit_breaker_recovery_timeout = 30
+circuit_breaker_success_threshold = 2
+max_connections = 50
+socket_keepalive = true
+retry_on_timeout = true
+circuit_breaker_enable = true
+circuit_breaker_failure_threshold = 5
+circuit_breaker_recovery_timeout = 30
+circuit_breaker_success_threshold = 2
 
 [Locks]
 lock_duration = 600

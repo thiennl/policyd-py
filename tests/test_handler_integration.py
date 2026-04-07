@@ -105,6 +105,12 @@ class FakeRedis:
                 return None
             await asyncio.sleep(0.01)
 
+    def get_connection_pool_info(self):
+        return {"status": "fake_connected"}
+
+    def get_circuit_breaker_state(self):
+        return None
+
 
 class FakePubSub:
     async def subscribe(self, channel):
