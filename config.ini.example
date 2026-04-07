@@ -1,0 +1,188 @@
+[General]
+socket = /var/run/gopolicyd.sock
+socket_permission = 0666
+debug = false
+worker_count = 200
+client_read_timeout = 30
+client_write_timeout = 30
+
+[Actions]
+success_action = DUNNO
+fail_action = DEFER
+db_error_action = DUNNO
+
+[KeyDB]
+hosts = 127.0.0.1:6379
+password =
+db = 0
+cluster_mode = false
+connect_timeout = 5
+read_timeout = 3
+write_timeout = 3
+
+[Locks]
+lock_duration = 600
+unlock_ttl_threshold = 11
+
+[Penalty]
+enable = true
+ttl = 1d
+steps = 10m,30m,2h
+
+[Limits]
+enable_policyd = true
+policy_check_state = RCPT
+ratelimit_use_lua = true
+default_quota = 100/1h:fixed_window,30/5m:sliding_window_counter
+
+[DomainLists]
+# Local domains inline
+local_domains = example.com,internal.example
+# LDAP-backed list. Handler loads this at runtime.
+ldap_domains = ldap://ldap.example.com/dc=example,dc=com
+
+[AccountLists]
+vip_accounts = ceo@example.com,cfo@example.com
+
+[IPLists]
+trusted_relays = 10.0.0.0/24,192.168.1.10
+
+[AdaptiveLimits]
+enable = true
+authenticated_multiplier = 1.5
+unauthenticated_multiplier = 0.5
+local_sender_multiplier = 1.25
+external_sender_multiplier = 0.75
+trusted_multiplier = 2.0
+trusted_account_lists = vip_accounts
+trusted_domain_lists = local_domains
+trusted_ip_lists = trusted_relays
+minimum_multiplier = 0.5
+maximum_multiplier = 3.0
+
+[Quotas]
+internal_quota = 500/1h:fixed_window
+external_quota = 150/1h:fixed_window
+vip_quota = unlimited
+
+[Policies]
+# format: sender:recipient:quota
+vip_internal = @vip_accounts:@local_domains:vip_quota
+internal_to_internal = @local_domains:@local_domains:internal_quota
+internal_to_external = @local_domains:*:external_quota
+
+[EmailValidation]
+monitor_only = false
+dns_timeout = 10
+allow_smtputf8 = true
+allow_quoted_local = false
+allow_domain_literal = false
+validate_sender_syntax = true
+enable_blacklist = true
+validate_recipient_syntax = true
+validate_recipient_deliverability = false
+validate_recipient = true
+blacklist_auto_reload = true
+blacklist_reload_interval = 300
+sender_blacklist_file = /etc/policyd/blacklist_sender.txt
+recipient_blacklist_file = /etc/policyd/blacklist_recipient.txt
+domain_blacklist_file = /etc/policyd/blacklist_domain.txt
+
+[ExternalAction]
+# Set enable=true to use pluggable account lock/unlock providers.
+enable = false
+provider = script
+fallback_providers = webhook
+continue_on_error = false
+async_execution = false
+async_queue_size = 1000
+async_workers = 10
+
+[Webhook]
+# Used when provider=webhook or listed in fallback_providers.
+lock_url = https://hooks.example.com/lock
+unlock_url = https://hooks.example.com/unlock
+status_url =
+lock_method = POST
+unlock_method = POST
+status_method = GET
+lock_body = {"email":"${email}","reason":"${reason}","timestamp":"${timestamp}"}
+unlock_body = {"email":"${email}","timestamp":"${timestamp}"}
+status_field = status
+auth_type = bearer
+auth_token = CHANGE_ME
+auth_user =
+auth_pass =
+headers = X-Source:policyd-py
+sign_requests = false
+sign_secret =
+sign_header = X-Webhook-Signature
+timeout_seconds = 10
+retry_count = 3
+retry_delay_seconds = 2
+
+[Script]
+# Used when provider=script or when notify_command is set for script-based notifications.
+# Variables available in commands:
+#   ${action} ${email} ${reason} ${event} ${message} ${duration_seconds} ${timestamp}
+lock_command = /opt/repos/policyd-py/scripts/account_action.sh lock ${email} ${reason}
+unlock_command = /opt/repos/policyd-py/scripts/account_action.sh unlock ${email}
+status_command = /opt/repos/policyd-py/scripts/account_action.sh status ${email}
+notify_command = /opt/repos/policyd-py/scripts/notify_action.sh ${event} ${email} ${message}
+timeout_seconds = 10
+
+[LDAP]
+host = ldap.example.com
+port = 389
+use_ssl = false
+bind_dn = cn=readonly,dc=example,dc=com
+bind_password = CHANGE_ME
+base_dn = dc=example,dc=com
+search_filter = (associatedDomain=*)
+domain_attribute = associatedDomain
+timeout = 10
+refresh_interval = 60
+
+[Telegram]
+enable = false
+bot_token =
+chat_id =
+
+[Discord]
+enable = false
+bot_token =
+channel_id =
+message_template = [policyd] {message} ({timestamp})
+
+[Email]
+enable = false
+smtp_host = smtp.example.com
+smtp_port = 587
+smtp_user = monitor@example.com
+smtp_password = CHANGE_ME
+from = monitor@example.com
+from_display_name = Policyd Monitor
+to = soc@example.com,mailops@example.com
+subject = Policyd Alert
+template = {message}
+
+[Logging]
+log_file =
+level = info
+
+[Web]
+# Management API (health/stats/config/actions)
+enable = false
+host = 127.0.0.1
+port = 8080
+
+# Leave password empty to disable Basic auth, or set both username/password.
+username = admin
+password =
+
+# Optional bearer token authentication (Authorization: Bearer <token>)
+bearer_token =
+
+# Optional CORS for web UI / automation clients
+cors_enabled = false
+cors_origins = *
