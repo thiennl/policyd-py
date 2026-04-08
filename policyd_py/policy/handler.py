@@ -21,7 +21,7 @@ from policyd_py.validation.validator import EmailValidator
 if TYPE_CHECKING:
     from policyd_py.actions.manager import ActionManager
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("PolicyCore")
 
 
 @dataclass
@@ -315,7 +315,7 @@ class PolicyHandler:
             quota_str = "default_quota"
         
         logger.info(
-            "Policy request processed: action=%s, sender=%s, recipient=%s, client_ip=%s, policy=%s, quota=%s, usage=%s",
+            "Policy request processed: action=%s, sender=%s, recipient=%s, client_ip=%s, policy=%s, quota=%s, %s",
             action, sender, recipient, client_ip, policy_str, quota_str, usage_info
         )
 

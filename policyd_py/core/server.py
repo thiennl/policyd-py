@@ -11,7 +11,7 @@ from policyd_py.config.settings import AppConfig
 from policyd_py.core.models import PolicyRequest
 from policyd_py.policy.handler import PolicyHandler
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("PolicydServer")
 
 
 class PolicydServer:
@@ -25,7 +25,10 @@ class PolicydServer:
 
     async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         peer = writer.get_extra_info("peername")
-        logger.debug("New connection from %s", peer)
+        if peer:
+            logger.debug("New connection from %s", peer)
+        else:
+            logger.debug("New process connected via Unix socket")
         self.handler.on_connection_open()
 
         async with self._connection_semaphore:
@@ -57,7 +60,17 @@ class PolicydServer:
             except asyncio.CancelledError:
                 pass
             except TimeoutError:
-                logger.warning("Client %s timed out", peer)
+                partial_info = ""
+                if 'data_dict' in locals() and isinstance(data_dict, dict) and data_dict:
+                    partial_sender = data_dict.get('sender', 'N/A')
+                    partial_ip = data_dict.get('client_address', 'N/A')
+                    if partial_sender != 'N/A' or partial_ip != 'N/A':
+                        partial_info = f" [Partial data received -> sender={partial_sender}, client_ip={partial_ip}]"
+
+                if peer:
+                    logger.warning("Client %s timed out%s", peer, partial_info)
+                else:
+                    logger.warning("Client (Unix socket) timed out%s", partial_info)
             except Exception as exc:
                 logger.error("Error handling postfix connection from %s: %s", peer, exc, exc_info=True)
             finally:
