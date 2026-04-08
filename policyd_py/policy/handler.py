@@ -261,16 +261,19 @@ class PolicyHandler:
 
             if not limits:
                 self.stats.inc_accepted()
+                self._log_processed_request(req, "dunno", policy, "unlimited")
                 return PolicyResponse.create_dunno()
 
             selector = self._selector(req)
             if not selector:
                 self.stats.inc_accepted()
+                self._log_processed_request(req, "dunno", policy, "unlimited")
                 return PolicyResponse.create_dunno()
 
             limits = await self._apply_adaptive_limits(req, selector, limits)
             if limits and limits[0].unlimited:
                 self.stats.inc_accepted()
+                self._log_processed_request(req, "dunno", policy, "unlimited")
                 return PolicyResponse.create_dunno()
 
             if any(limit.algorithm == "sliding_window_counter" for limit in limits if not limit.unlimited):
@@ -280,21 +283,41 @@ class PolicyHandler:
             if err:
                 logger.error("Rate limit check error: %s", err)
                 self.stats.inc_errors()
+                self._log_processed_request(req, "error", policy, str(err))
                 return PolicyResponse(action=self.config.actions.db_error_action)
 
             if not allowed:
                 self.stats.inc_rate_limited()
                 self.stats.inc_deferred()
                 await self._handle_rate_limit_exceeded(req, selector, info, limits)
+                self._log_processed_request(req, "defer", policy, info)
                 return PolicyResponse.create_defer(info)
 
             self.stats.inc_accepted()
+            self._log_processed_request(req, "dunno", policy, info)
             return PolicyResponse.create_dunno()
 
         except Exception as exc:
             logger.error("Error handling policy request: %s", exc, exc_info=True)
             self.stats.inc_errors()
             return PolicyResponse(action=self.config.actions.db_error_action)
+
+    def _log_processed_request(self, req: PolicyRequest, action: str, policy: Optional[PolicyRule], usage_info: str) -> None:
+        sender = req.sender or ""
+        recipient = req.recipient or ""
+        client_ip = req.client_address or ""
+
+        if policy:
+            policy_str = f"{policy.name}({policy.sender}->{policy.recipient})"
+            quota_str = policy.quota
+        else:
+            policy_str = "default(*->*)"
+            quota_str = "default_quota"
+        
+        logger.info(
+            "Policy request processed: action=%s, sender=%s, recipient=%s, client_ip=%s, policy=%s, quota=%s, usage=%s",
+            action, sender, recipient, client_ip, policy_str, quota_str, usage_info
+        )
 
     def _selector(self, req: PolicyRequest) -> str:
         return req.sasl_username or req.sender or ""

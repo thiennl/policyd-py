@@ -1,0 +1,31 @@
+[Unit]
+Description=Policyd-Py Postfix Policy Daemon
+Documentation=https://github.com/policyd-py
+After=network.target network-online.target redis.service
+Requires=network-online.target
+
+[Service]
+Type=simple
+User=policyd
+Group=policyd
+
+# Đường dẫn trỏ tới thư mục mã nguồn
+WorkingDirectory=/root/policyd
+
+# Biến môi trường chỉ định file config
+Environment="POLICYD_CONFIG=/etc/policyd/config.ini"
+
+# Lệnh khởi chạy thông qua virtual environment
+ExecStart=/root/policyd/venv/bin/python -m policyd_py.__main__
+
+# Cơ chế restart tự động nếu app bị sập
+Restart=always
+RestartSec=5
+
+# Cấu hình tối ưu tài nguyên (Security & Perfomance)
+LimitNOFILE=65535
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
